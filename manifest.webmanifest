@@ -1,0 +1,9 @@
+{
+  "name":"Mon Talmud",
+  "short_name":"Mon Talmud",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f5f7fb",
+  "theme_color":"#16265f",
+  "icons":[]
+}

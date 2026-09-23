@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16265f">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Mon Talmud</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182033;--muted:#718096;--blue:#2946a8;--blue2:#eef2ff;--green:#13835a;--line:#e4e8f0;--danger:#a33}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.wrap{max-width:1050px;margin:auto;padding:24px 16px 55px}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px}
+h1{font-size:32px;letter-spacing:-1.2px;margin:0}.sub{color:var(--muted);font-size:14px;margin-top:3px}.actions{display:flex;gap:8px;align-items:center}.btn{border:1px solid var(--line);background:#fff;padding:9px 12px;border-radius:10px;color:var(--muted);cursor:pointer}.login{background:var(--blue);color:#fff;border-color:var(--blue)}
+.user{font-size:11px;color:var(--muted);margin-top:4px;text-align:right}
+.hero{background:linear-gradient(135deg,#16265f,#3658c7);color:white;border-radius:22px;padding:23px;box-shadow:0 14px 35px #16265f25}.heroRow{display:flex;justify-content:space-between;align-items:center}.label{font-size:11px;letter-spacing:1px;opacity:.72}.pct{font-size:52px;font-weight:850;letter-spacing:-3px}.heroRight{text-align:right;font-size:13px;opacity:.85}.bar{height:12px;background:#ffffff2e;border-radius:99px;overflow:hidden;margin-top:15px}.fill{height:100%;background:white;border-radius:99px;transition:.25s;width:0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0 28px}.stat{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:16px}.stat b{display:block;font-size:23px}.stat span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.seder{margin:27px 0 10px;display:flex;align-items:baseline;gap:9px}.seder h2{font-size:19px;margin:0}.seder span{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.item{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;display:flex;align-items:center;gap:10px;cursor:pointer}.item:hover{border-color:#aebcf0}.item.done{background:#f0faf6;border-color:#b9e3d1}.item input{width:19px;height:19px;accent-color:var(--green);cursor:pointer}.name{font-weight:700}.daf{margin-left:auto;color:var(--muted);font-size:11px}.done .name{color:#106b4d}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}.controls h2{font-size:20px;margin:0}.search{width:250px;border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px;outline:none}
+.notice{margin:18px 0;padding:12px 14px;border-radius:12px;background:var(--blue2);color:#43506d;font-size:13px;line-height:1.45}.offline{background:#fff5e8;color:#79531d}
+.help{margin-top:25px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:14px;font-size:13px;line-height:1.55;color:#43506d}
+@media(max-width:760px){.wrap{padding:18px 12px}.top{align-items:flex-start}.actions{flex-direction:column;align-items:flex-end}.stats{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}.pct{font-size:44px}.search{width:100%}.controls{flex-direction:column;align-items:stretch}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top"><div><h1>📖 Mon Talmud</h1><div class="sub">Mon parcours dans le Shas Bavli</div></div><div class="actions"><button id="login" class="btn login">Se connecter avec Google</button><button id="logout" class="btn" style="display:none">Déconnexion</button></div></div>
+<div id="user" class="user"></div>
+<div id="notice" class="notice">Connexion nécessaire pour synchroniser ton avancement entre ton PC et ton iPhone.</div>
+<section class="hero"><div class="heroRow"><div><div class="label">AVANCEMENT GLOBAL</div><div class="pct" id="pct">0%</div></div><div class="heroRight" id="summary">0 / 37 massekhtot<br>0 / 2 711 dapim</div></div><div class="bar"><div class="fill" id="fill"></div></div></section>
+<div class="stats">
+<div class="stat"><b id="md">0</b><span>Massekhtot étudiées</span></div><div class="stat"><b id="mr">37</b><span>Massekhtot restantes</span></div>
+<div class="stat"><b id="dp">0</b><span>Dapim étudiés</span></div><div class="stat"><b id="dr">2711</b><span>Dapim restants</span></div>
+</div>
+<div class="controls"><h2>Les massekhtot</h2><input class="search" id="search" placeholder="Rechercher…"></div>
+<div id="content"></div>
+<div class="help"><b>Synchronisation :</b> connecte-toi avec le même compte Google sur ton PC et ton iPhone. Chaque coche est enregistrée dans le cloud et répercutée sur les deux appareils.</div>
+</div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import {getFirestore,doc,setDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import {firebaseConfig} from "./firebase-config.js";
+
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app),provider=new GoogleAuthProvider();
+const sedarim=[
+["Zeraim",[["Berakhot",64]]],
+["Moed",[["Shabbat",157],["Eruvin",105],["Pesachim",121],["Yoma",88],["Sukkah",56],["Beitzah",40],["Rosh Hashanah",35],["Taanit",31],["Megillah",32],["Moed Katan",29],["Chagigah",27]]],
+["Nashim",[["Yevamot",122],["Ketubot",112],["Nedarim",91],["Nazir",66],["Sotah",49],["Gittin",90],["Kiddushin",82]]],
+["Nezikin",[["Bava Kamma",119],["Bava Metzia",119],["Bava Batra",176],["Sanhedrin",113],["Makkot",24],["Shevuot",49],["Avodah Zarah",76],["Horayot",14]]],
+["Kodashim",[["Zevachim",120],["Menachot",110],["Chullin",142],["Bekhorot",61],["Arakhin",34],["Temurah",34],["Keritot",28],["Meilah",22],["Tamid",34],["Middot",34],["Kinnim",4]]],
+["Taharot",[]]];
+const data=[];sedarim.forEach(([s,items])=>items.forEach(x=>data.push({s,name:x[0],daf:x[1]})));
+const total=data.reduce((a,x)=>a+x.daf,0);let state={},user=null,unsubscribe=null;
+const $=id=>document.getElementById(id);
+function stats(){let done=data.reduce((a,x,i)=>a+(state[i]?1:0),0),pages=data.reduce((a,x,i)=>a+(state[i]?x.daf:0),0),p=Math.round(pages/total*100);$("pct").textContent=p+"%";$("fill").style.width=p+"%";$("summary").innerHTML=`${done} / ${data.length} massekhtot<br>${pages.toLocaleString("fr-FR")} / ${total.toLocaleString("fr-FR")} dapim`;$("md").textContent=done;$("mr").textContent=data.length-done;$("dp").textContent=pages.toLocaleString("fr-FR");$("dr").textContent=(total-pages).toLocaleString("fr-FR")}
+function render(){let q=$("search").value.toLowerCase(),c=$("content");c.innerHTML="";sedarim.forEach(([s,items])=>{let f=items.map(x=>data.find(d=>d.name===x[0])).filter(x=>!q||x.name.toLowerCase().includes(q));if(!f.length)return;let h=document.createElement("div");h.className="seder";h.innerHTML=`<h2>${s}</h2><span>${f.length} massekhtot</span>`;c.appendChild(h);let g=document.createElement("div");g.className="grid";f.forEach(x=>{let i=data.findIndex(d=>d.name===x.name),l=document.createElement("label");l.className="item "+(state[i]?"done":"");l.innerHTML=`<input type="checkbox" ${state[i]?"checked":""}><span class="name">${x.name}</span><span class="daf">${x.daf} dapim</span>`;l.querySelector("input").onchange=async e=>{state[i]=e.target.checked;render();if(user)await setDoc(doc(db,"users",user.uid),{completed:state},{merge:true})};g.appendChild(l)});c.appendChild(g)});stats()}
+$("search").oninput=render;
+$("login").onclick=async()=>{try{await signInWithPopup(auth,provider)}catch(e){alert("Connexion impossible : "+e.message)}};
+$("logout").onclick=()=>signOut(auth);
+onAuthStateChanged(auth,u=>{user=u; if(unsubscribe){unsubscribe();unsubscribe=null} if(u){$("login").style.display="none";$("logout").style.display="block";$("user").textContent="Connecté : "+(u.displayName||u.email||"compte Google");$("notice").textContent="Synchronisation active entre tes appareils.";$("notice").classList.remove("offline");unsubscribe=onSnapshot(doc(db,"users",u.uid),snap=>{state=(snap.data()?.completed)||{};render()});}else{$("login").style.display="block";$("logout").style.display="none";$("user").textContent="";$("notice").textContent="Connexion nécessaire pour synchroniser ton avancement entre ton PC et ton iPhone.";render()}});
+render();
+</script>
+</body></html>
