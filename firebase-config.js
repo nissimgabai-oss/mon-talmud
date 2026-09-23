@@ -1,5 +1,5 @@
 export const firebaseConfig = {
-  apiKey: "AIzaSyBWIAcUPXS02b_KhNnk7eBSu0i8DRDcTbY",
+  apiKey: "AIzaSyBWAcIUPXS02b_KhNnk7eBSu0i8DRDcTbY",
   authDomain: "talmud-tracker.firebaseapp.com",
   projectId: "talmud-tracker",
   storageBucket: "talmud-tracker.firebasestorage.app",
